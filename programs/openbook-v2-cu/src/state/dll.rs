@@ -83,7 +83,7 @@ impl DLLEventQueue {
     }
 
     pub fn at(&self, slot: usize) -> Option<&AnyEvent> {
-        if !self.nodes[slot].is_free() {
+        if self.nodes[slot].is_free() {
             return None;
         } else {
             Some(&self.nodes[slot].event)
@@ -121,13 +121,18 @@ impl DLLEventQueue {
         Ok(self.nodes[slot].event)
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &AnyEvent> {
+    pub fn iter(&self) -> impl Iterator<Item = EventWithSlot> {
         DLLEventQueueIterator {
             queue: self,
-            slot: self.header.free_head(),
+            slot: self.header.used_head(),
             index: 0,
         }
     }
+}
+
+pub struct EventWithSlot<'a> {
+    event: &'a AnyEvent,
+    slot: usize,
 }
 
 struct DLLEventQueueIterator<'a> {
@@ -137,15 +142,16 @@ struct DLLEventQueueIterator<'a> {
 }
 
 impl<'a> Iterator for DLLEventQueueIterator<'a> {
-    type Item = &'a AnyEvent;
+    type Item = EventWithSlot<'a>;
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.queue.len() {
             None
         } else {
-            let item = &self.queue.nodes[self.slot].event;
-            self.slot = self.queue.nodes[self.slot].next();
+            let slot = self.slot;
+            let item = &self.queue.nodes[slot].event;
+            self.slot = self.queue.nodes[slot].next();
             self.index += 1;
-            Some(item)
+            Some(EventWithSlot { event: item, slot })
         }
     }
 }

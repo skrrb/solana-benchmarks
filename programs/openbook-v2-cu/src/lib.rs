@@ -63,9 +63,15 @@ pub mod openbook_v2_cu {
             event_queue.push_back(bytemuck::cast(event)).unwrap();
         }
 
-        msg!("# Iterating");
+        let n = 10;
+        msg!("# Iterating_{}", n);
         sol_log_compute_units();
-        assert_eq!(event_queue.header.count(), MAX_NUM_EVENTS);
+        assert_eq!(event_queue.iter().take(n).count(), n);
+        sol_log_compute_units();
+
+        msg!("# Iterating_{}", MAX_NUM_EVENTS);
+        sol_log_compute_units();
+        assert_eq!(event_queue.iter().count(), MAX_NUM_EVENTS);
         sol_log_compute_units();
 
         msg!("# Deleting_{}", event_queue.header.count());
@@ -122,9 +128,15 @@ pub mod openbook_v2_cu {
             event_queue.push_back(bytemuck::cast(event));
         }
 
-        msg!("# Iterating");
+        let n = 10;
+        msg!("# Iterating_{}", n);
         sol_log_compute_units();
-        assert_eq!(event_queue.header.count(), MAX_NUM_EVENTS);
+        assert_eq!(event_queue.iter().take(n).count(), n);
+        sol_log_compute_units();
+
+        msg!("# Iterating_{}", MAX_NUM_EVENTS);
+        sol_log_compute_units();
+        assert_eq!(event_queue.iter().count(), MAX_NUM_EVENTS);
         sol_log_compute_units();
 
         msg!("# Deleting_{}", event_queue.header.count());
