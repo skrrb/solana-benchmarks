@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use openbook_v2::state::{EventType, OutEvent, Side};
+use openbook_v2::state::{OutEvent, Side};
 use solana_program::log::sol_log_compute_units;
 
 mod state;
@@ -152,7 +152,7 @@ pub struct DLList<'info> {
 #[cfg(test)]
 mod comp_budget {
     use super::*;
-    use anchor_lang::{Discriminator, InstructionData};
+    use anchor_lang::InstructionData;
     use solana_program_test::{tokio, ProgramTest};
     use solana_sdk::{
         account::Account,

@@ -1,6 +1,5 @@
 use super::MAX_NUM_EVENTS;
 use anchor_lang::prelude::*;
-use num_enum::{IntoPrimitive, TryFromPrimitive};
 use openbook_v2::{error::OpenBookError, state::AnyEvent};
 use static_assertions::const_assert_eq;
 
@@ -30,7 +29,6 @@ impl DLLEventQueue {
         for i in 0..MAX_NUM_EVENTS {
             self.nodes[i].set_next(i + 1);
             self.nodes[i].set_prev(NULL as usize);
-            self.nodes[i].mark_as_free();
         }
         self.nodes[LAST_SLOT].set_next(NULL as usize);
     }
@@ -72,7 +70,6 @@ impl DLLEventQueue {
         self.header.incr_count();
         self.header.incr_event_id();
         self.nodes[slot].event = value;
-        self.nodes[slot].mark_as_used();
         self.nodes[slot].set_next(new_next);
         self.nodes[slot].set_prev(new_prev);
     }
@@ -119,7 +116,7 @@ impl DLLEventQueue {
 
         self.header.decr_count();
         self.nodes[slot].set_next(next_free);
-        self.nodes[slot].mark_as_free();
+        self.nodes[slot].set_prev(NULL as usize);
 
         Ok(self.nodes[slot].event)
     }
@@ -204,28 +201,15 @@ impl DLLHeader {
 pub struct Node {
     next: u16,
     prev: u16,
-    status: u8, // NodeStatus,
-    _pad: [u8; 3],
+    _pad: [u8; 4],
     pub event: AnyEvent,
 }
 const_assert_eq!(std::mem::size_of::<Node>(), 8 + 200);
 const_assert_eq!(std::mem::size_of::<Node>() % 8, 0);
 
 impl Node {
-    pub fn status(&self) -> NodeStatus {
-        NodeStatus::try_from(self.status).unwrap()
-    }
-
     pub fn is_free(&self) -> bool {
-        self.status == Into::<u8>::into(NodeStatus::Free)
-    }
-
-    fn mark_as_free(&mut self) {
-        self.status = NodeStatus::Free.into();
-    }
-
-    fn mark_as_used(&mut self) {
-        self.status = NodeStatus::InUse.into();
+        self.prev == NULL
     }
 
     pub fn next(&self) -> usize {
@@ -243,23 +227,6 @@ impl Node {
     fn set_prev(&mut self, prev: usize) {
         self.prev = prev as u16;
     }
-}
-
-#[derive(
-    Eq,
-    PartialEq,
-    Copy,
-    Clone,
-    Debug,
-    IntoPrimitive,
-    TryFromPrimitive,
-    AnchorSerialize,
-    AnchorDeserialize,
-)]
-#[repr(u8)]
-pub enum NodeStatus {
-    Free = 0,
-    InUse = 1,
 }
 
 #[cfg(test)]
